@@ -153,14 +153,14 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
     padding: 12,
-    backgroundColor: "#ddd",
+    backgroundColor: "#4682b4",
     borderRadius: 5
   },
   fab: {
     position: "absolute",
     bottom: 16,
     right: 16,
-    backgroundColor: "#6200ee"
+    backgroundColor: "#4682b4"
   },
   optionButton: {
     marginVertical: 5
@@ -194,4 +194,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold"
   }
 });
-
