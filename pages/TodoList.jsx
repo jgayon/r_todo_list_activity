@@ -3,104 +3,153 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
-  Alert,
-  TouchableOpacity
+  StyleSheet
 } from "react-native";
+import {
+  FAB,
+  Portal,
+  Modal,
+  TextInput,
+  Button,
+  Appbar,
+  Menu
+} from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FAB, TextInput, Dialog, Portal, Button, Provider } from "react-native-paper";
+import { Swipeable } from "react-native-gesture-handler";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function TodoList() {
+  const [visible, setVisible] = useState(false);
+  const [menuVisibleId, setMenuVisibleId] = useState(null);
   const [data, setData] = useState([{ id: 1, name: "Item 1" }]);
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [currentText, setCurrentText] = useState("");
-  const [editItemId, setEditItemId] = useState(null);
+  const [currentItem, setCurrentItem] = useState(null);
+  const [inputValue, setInputValue] = useState("");
+
+  const openMenu = (id) => setMenuVisibleId(id);
+  const closeMenu = () => setMenuVisibleId(null);
+
+  const renderItem = ({ item }) => {
+    const renderRightActions = () => (
+      <View style={styles.rightAction}>
+        <Text style={styles.deleteText}>Eliminar</Text>
+      </View>
+    );
+
+    return (
+      <Swipeable
+        friction={2}
+        overshootRight={false}
+        renderRightActions={renderRightActions}
+        rightThreshold={80}
+        onSwipeableOpen={(direction) => {
+          if (direction === "right") {
+            deleteItem(item.id);
+          }
+        }}
+      >
+        <View style={styles.item}>
+          <Text>{item.name}</Text>
+          <Menu
+            visible={menuVisibleId === item.id}
+            onDismiss={closeMenu}
+            anchor={
+              <Icon
+                name="dots-vertical"
+                size={24}
+                onPress={() => openMenu(item.id)}
+              />
+            }
+          >
+            <Menu.Item onPress={() => { closeMenu(); editItem(item); }} title="Editar" />
+            <Menu.Item onPress={() => { closeMenu(); deleteItem(item.id); }} title="Eliminar" />
+          </Menu>
+        </View>
+      </Swipeable>
+    );
+  };
 
   const addItem = () => {
-    const newItem = {
-      id: Date.now(), 
-      name: `Item ${data.length + 1}`
-    };
-    setData((prevData) => [...prevData, newItem]);
+    setCurrentItem(null);
+    setInputValue("");
+    setVisible(true);
+  };
+
+  const saveItem = () => {
+    if (inputValue.trim() === "") return;
+
+    if (currentItem) {
+      setData((prevData) =>
+        prevData.map((item) =>
+          item.id === currentItem.id ? { ...item, name: inputValue } : item
+        )
+      );
+    } else {
+      const newItem = {
+        id: Date.now(),
+        name: inputValue
+      };
+      setData((prevData) => [...prevData, newItem]);
+    }
+    setVisible(false);
+    setCurrentItem(null);
+    setInputValue("");
+  };
+
+  const editItem = (item) => {
+    setCurrentItem(item);
+    setInputValue(item.name);
+    setVisible(true);
   };
 
   const deleteItem = (id) => {
     setData((prevData) => prevData.filter((item) => item.id !== id));
   };
 
-  const openEditDialog = (item) => {
-    setCurrentText(item.name);
-    setEditItemId(item.id);
-    setDialogVisible(true);
-  };
-
-  const saveEdit = () => {
-    setData((prevData) =>
-      prevData.map((item) =>
-        item.id === editItemId ? { ...item, name: currentText } : item
-      )
-    );
-    setDialogVisible(false);
-    setEditItemId(null);
-    setCurrentText("");
-  };
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onLongPress={() =>
-        Alert.alert(
-          "Opciones",
-          "¿Qué deseas hacer?",
-          [
-            { text: "Editar", onPress: () => openEditDialog(item) },
-            { text: "Eliminar", onPress: () => deleteItem(item.id), style: "destructive" },
-            { text: "Cancelar", style: "cancel" }
-          ],
-          { cancelable: true }
-        )
-      }
-    >
-      <Text>{item.name}</Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <Provider>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={data}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ padding: 16 }}
+    <SafeAreaView style={{ flex: 1 }}>
+      <Appbar.Header>
+        <Appbar.Content title="Todo List" />
+      </Appbar.Header>
+      <FlatList
+        data={data}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={{ padding: 4 }}
+      />
+      <FAB style={styles.fab} icon="plus" color="white" onPress={addItem} />
+      <Portal>
+        <Modal
+          visible={visible}
+          onDismiss={() => setVisible(false)}
+          animationType="slide"
+          contentContainerStyle={styles.bottomSheetStyle}
+        >
+          <TextInput
+            style={styles.input}
+            placeholder="Enter TODO item"
+            value={inputValue}
+            onChangeText={setInputValue}
+            onSubmitEditing={saveItem}
           />
-          <FAB style={styles.fab} icon="plus" color="white" onPress={addItem} />
-
-          <Portal>
-            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-              <Dialog.Title>Editar tarea</Dialog.Title>
-              <Dialog.Content>
-                <TextInput
-                  label="Tarea"
-                  value={currentText}
-                  onChangeText={setCurrentText}
-                />
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setDialogVisible(false)}>Cancelar</Button>
-                <Button onPress={saveEdit}>Guardar</Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
-        </View>
-      </SafeAreaView>
-    </Provider>
+          <View style={{ flexDirection: "row", justifyContent: "space-evenly" }}>
+            <Button mode="outlined" onPress={saveItem} style={styles.optionButton}>
+              Save
+            </Button>
+            <Button mode="outlined" onPress={() => setVisible(false)} style={styles.optionButton}>
+              Cancel
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   item: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginVertical: 8,
     marginHorizontal: 16,
     padding: 12,
@@ -112,5 +161,36 @@ const styles = StyleSheet.create({
     bottom: 16,
     right: 16,
     backgroundColor: "#6200ee"
+  },
+  optionButton: {
+    marginVertical: 5
+  },
+  bottomSheetStyle: {
+    backgroundColor: "white",
+    padding: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0
+  },
+  input: {
+    backgroundColor: "white",
+    borderRadius: 5,
+    marginBottom: 10
+  },
+  rightAction: {
+    width: 80,
+    backgroundColor: "red",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 5,
+    marginVertical: 8,
+    marginHorizontal: 16
+  },
+  deleteText: {
+    color: "white",
+    fontWeight: "bold"
   }
 });
