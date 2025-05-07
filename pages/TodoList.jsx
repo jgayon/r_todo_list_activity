@@ -15,7 +15,7 @@ import {
   Menu
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Swipeable } from "react-native-gesture-handler";
+import { Swipeable } from 'react-native-gesture-handler';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 export default function TodoList() {
@@ -194,3 +194,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold"
   }
 });
+
